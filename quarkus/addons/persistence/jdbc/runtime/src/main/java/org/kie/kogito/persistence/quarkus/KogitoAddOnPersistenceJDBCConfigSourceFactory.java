@@ -39,14 +39,25 @@ public class KogitoAddOnPersistenceJDBCConfigSourceFactory implements ConfigSour
     private static final String ORACLE = "oracle";
     private static final String ANSI = "ansi";
 
+    private static final String FLYWAY_ENABLED = "kogito.persistence.flyway.enabled";
+
     @Override
     public Iterable<ConfigSource> getConfigSources(ConfigSourceContext context) {
         Map<String, String> configuration = new HashMap<>();
-        final String databaseName = context.getValue(DATASOURCE_DB_KIND).getValue();
-        if (databaseName != null) {
-            configuration.put(FLYWAY_LOCATIONS, LOCATION_PREFIX + getDBName(databaseName));
+
+        String flyWayEnabledValue = context.getValue(FLYWAY_ENABLED).getValue();
+
+        if (flyWayEnabledValue == null || "true".equals(flyWayEnabledValue)) {
+            configuration.put(FLYWAY_ENABLED, "true");
+
+            final String databaseName = context.getValue(DATASOURCE_DB_KIND).getValue();
+            if (databaseName != null) {
+                configuration.put(FLYWAY_LOCATIONS, LOCATION_PREFIX + getDBName(databaseName));
+            } else {
+                LOGGER.warn("Kogito Flyway must have the property \"quarkus.datasource.db-kind\" to be set to initialize process schema.");
+            }
         } else {
-            LOGGER.warn("Kogito Flyway must have the property \"quarkus.datasource.db-kind\" to be set to initialize process schema.");
+            configuration.put(FLYWAY_ENABLED, "false");
         }
         return List.of(new KogitoAddOnPersistenceJDBCConfigSource(configuration));
     }
